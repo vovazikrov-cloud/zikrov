@@ -3,97 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Store</title>
+    <title>Store Admin Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: var(--tg-theme-bg-color, #1a1a1a); color: var(--tg-theme-text-color, #ffffff); }
-        .card { background-color: var(--tg-theme-secondary-bg-color, #2d2d2d); border-radius: 12px; }
-        .btn-main { background-color: #2481cc; color: #fff; }
+        .card { background-color: var(--tg-theme-secondary-bg-color, #2d2d2d); border-radius: 16px; }
+        .btn-main { background: linear-gradient(90deg, #2481cc, #33a1f3); color: #fff; }
+        .input-admin { background: #3d3d3d; border: 1px solid #555; padding: 10px; border-radius: 10px; width: 100%; color: white; margin-bottom: 10px; }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 font-sans">
 
-    <div id="shop-view">
-        <h1 class="text-2xl font-bold mb-6 text-center">Магазин аккаунтов</h1>
-        <div class="grid gap-4" id="products">
-            <div class="card p-4 flex justify-between items-center shadow-lg">
-                <div>
-                    <h3 class="font-bold text-lg">Telegram AutoReg (USA)</h3>
-                    <p class="text-blue-400 font-bold">150 ₽</p>
+    <div class="flex justify-between mb-6 border-b border-white/10 pb-2 text-sm">
+        <button onclick="showView('shop-view')" class="opacity-70 active:opacity-100">🛒 Магазин</button>
+        <button onclick="showView('admin-view')" class="text-red-400 font-bold">⚙️ Админ-панель</button>
+    </div>
+
+    <div id="app">
+        <div id="shop-view">
+            <h1 class="text-xl font-bold mb-4">Доступные товары</h1>
+            <div id="product-list" class="grid gap-3"></div>
+        </div>
+
+        <div id="admin-view" class="hidden">
+            <h2 class="text-xl font-bold mb-4 text-red-400">Управление товарами</h2>
+            
+            <div class="card p-4 mb-6 border border-red-500/20">
+                <h3 class="text-sm mb-3 opacity-60">Добавить новый товар:</h3>
+                <input id="new-name" type="text" placeholder="Название (напр. TG USA)" class="input-admin">
+                <input id="new-price" type="number" placeholder="Цена в рублях" class="input-admin">
+                <input id="new-info" type="text" placeholder="Описание (отлежка и т.д.)" class="input-admin">
+                <button onclick="addProduct()" class="w-full bg-green-600 py-3 rounded-xl font-bold mt-2">Добавить на сайт</button>
+            </div>
+
+            <div id="admin-product-list" class="space-y-2">
                 </div>
-                <button onclick="openPayment('Telegram AutoReg (USA)', 150)" class="btn-main px-6 py-2 rounded-full font-medium">Купить</button>
+            
+            <div class="mt-8 p-4 bg-blue-500/10 rounded-xl border border-blue-500/30">
+                <p class="text-[10px] uppercase opacity-50 mb-2">Для сохранения на GitHub:</p>
+                <button onclick="copyJson()" class="text-xs bg-blue-600 px-3 py-1 rounded">Скопировать JSON товаров</button>
+                <p class="text-[9px] mt-2 leading-tight">После добавления всех товаров, нажми кнопку выше и вставь результат в переменную `initialProducts` в коде файла.</p>
             </div>
         </div>
-    </div>
 
-    <div id="payment-view" class="hidden">
-        <button onclick="closePayment()" class="mb-4 text-gray-400">← Назад</button>
-        <div class="card p-6 text-center">
-            <h2 class="text-xl mb-2">Оплата заказа</h2>
-            <p id="order-info" class="mb-4 text-blue-300 font-bold"></p>
-            
-            <div class="bg-black/20 p-4 rounded-lg mb-4 text-left">
-                <p class="text-sm opacity-70">Реквизиты для перевода (СБП/Карта):</p>
-                <p class="text-lg font-mono font-bold select-all">+79001234567</p>
-                <p class="text-xs text-yellow-500 mt-2">⚠️ Обязательно сделайте скриншот чека!</p>
+        <div id="payment-view" class="hidden">
+            <button onclick="showView('shop-view')" class="text-blue-400 mb-4 inline-block">← Назад</button>
+            <div class="card p-6 border border-white/10">
+                <h2 id="pay-title" class="text-xl font-bold"></h2>
+                <p id="pay-price" class="text-2xl text-blue-400 font-bold mb-4"></p>
+                <div class="p-4 bg-black/40 rounded-xl mb-4 font-mono text-sm">
+                    Реквизиты: <br> +79001234567 (СБП)
+                </div>
+                <button onclick="finalRedirect()" class="w-full btn-main py-4 rounded-xl font-bold">Я ОПЛАТИЛ (СКРИН ГОТОВ)</button>
             </div>
-
-            <button onclick="confirmStep()" id="confirm-btn" class="w-full btn-main py-3 rounded-xl font-bold">Я ОПЛАТИЛ</button>
-        </div>
-    </div>
-
-    <div id="screenshot-view" class="hidden">
-        <div class="card p-6 text-center">
-            <div class="text-5xl mb-4">📸</div>
-            <h2 class="text-xl mb-2 font-bold">Подтверждение</h2>
-            <p class="mb-6 opacity-80">Нажмите кнопку ниже, прикрепите скриншот чека и отправьте сообщение администратору.</p>
-            
-            <button onclick="sendToAdmin()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold shadow-lg animate-pulse">
-                ОТПРАВИТЬ ЧЕК АДМИНУ
-            </button>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
+        const ADMIN_USERNAME = 'z1krov'; // Твой ник в Телеграм
 
-        let currentOrder = { name: '', price: 0 };
-        const ADMIN_USERNAME = 'z1krov'; // ЗАМЕНИ ЭТО НА СВОЙ НИК БЕЗ @
+        // Загружаем товары из памяти браузера или используем стандартные
+        const initialProducts = [
+            { id: 1, name: "Telegram RU", price: 50, info: "Авторег" }
+        ];
+        
+        let products = JSON.parse(localStorage.getItem('my_store_products')) || initialProducts;
 
-        function openPayment(name, price) {
-            currentOrder = { name, price };
-            document.getElementById('order-info').innerText = `${name} — ${price} ₽`;
-            document.getElementById('shop-view').classList.add('hidden');
-            document.getElementById('payment-view').classList.remove('hidden');
+        function showView(viewId) {
+            document.querySelectorAll('#app > div').forEach(el => el.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            if(viewId === 'shop-view' || viewId === 'admin-view') render();
         }
 
-        function closePayment() {
-            document.getElementById('payment-view').classList.add('hidden');
-            document.getElementById('shop-view').classList.remove('hidden');
-        }
+        function addProduct() {
+            const name = document.getElementById('new-name').value;
+            const price = document.getElementById('new-price').value;
+            const info = document.getElementById('new-info').value;
 
-        function confirmStep() {
-            document.getElementById('payment-view').classList.add('hidden');
-            document.getElementById('screenshot-view').classList.remove('hidden');
-        }
+            if(!name || !price) return alert("Введите название и цену");
 
-        function sendToAdmin() {
-            // Формируем текст сообщения
-            const text = `Привет! Я оплатил заказ.%0A%0A📦 Товар: ${currentOrder.name}%0A💰 Сумма: ${currentOrder.price} руб.%0A%0AПрикрепляю скриншот оплаты ниже:`;
+            const newProd = { id: Date.now(), name, price: Number(price), info };
+            products.push(newProd);
+            save();
+            render();
             
-            // Ссылка на диалог с админом
-            const url = `https://t.me/${ADMIN_USERNAME}?text=${text}`;
-            
-            // Открываем внешнюю ссылку
-            tg.openTelegramLink(url);
-            
-            // Закрываем приложение
-            setTimeout(() => { tg.close(); }, 500);
+            // Очистка полей
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-price').value = '';
+            document.getElementById('new-info').value = '';
         }
+
+        function deleteProduct(id) {
+            products = products.filter(p => p.id !== id);
+            save();
+            render();
+        }
+
+        function save() {
+            localStorage.setItem('my_store_products', JSON.stringify(products));
+        }
+
+        function render() {
+            // Рендер для магазина
+            const shopList = document.getElementById('product-list');
+            shopList.innerHTML = products.map(p => `
+                <div class="card p-4 flex justify-between items-center" onclick="openPay(${p.id})">
+                    <div><div class="font-bold">${p.name}</div><div class="text-xs opacity-50">${p.info}</div></div>
+                    <div class="font-bold text-blue-400">${p.price} ₽</div>
+                </div>
+            `).join('');
+
+            // Рендер для админки
+            const adminList = document.getElementById('admin-product-list');
+            adminList.innerHTML = products.map(p => `
+                <div class="flex justify-between items-center bg-white/5 p-2 rounded-lg text-sm">
+                    <span>${p.name} (${p.price}₽)</span>
+                    <button onclick="deleteProduct(${p.id})" class="text-red-500 font-bold px-2">Удалить</button>
+                </div>
+            `).join('');
+        }
+
+        let currentItem = null;
+        function openPay(id) {
+            currentItem = products.find(p => p.id === id);
+            document.getElementById('pay-title').innerText = currentItem.name;
+            document.getElementById('pay-price').innerText = currentItem.price + ' ₽';
+            showView('payment-view');
+        }
+
+        function finalRedirect() {
+            const text = `Привет! Оплатил: ${currentItem.name} (${currentItem.price}р). Скриншот прикрепил:`;
+            tg.openTelegramLink(`https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(text)}`);
+            tg.close();
+        }
+
+        function copyJson() {
+            const str = JSON.stringify(products, null, 2);
+            navigator.clipboard.writeText(str);
+            alert("JSON скопирован! Теперь вставь его в код вместо старого списка товаров.");
+        }
+
+        render();
     </script>
 </body>
 </html>
+
+
 
 
